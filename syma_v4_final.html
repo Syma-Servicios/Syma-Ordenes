@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Syma · Órdenes de Retiro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal:#3d7a6e;--teal-d:#2c5c52;--teal-l:#eaf3f1;--teal-m:#c5deda;
+  --violet:#6b5b8a;--black:#111;--white:#fff;
+  --g50:#f7f8f9;--g100:#eef0f2;--g200:#dde1e5;--g300:#c4cad1;--g400:#8f9aaa;--g600:#566070;--g900:#1a1e25;
+  --red:#e53e3e;--red-l:#fff5f5;--amber:#d69e2e;--amber-l:#fffff0;--green:#38a169;--green-l:#f0fff4;
+  --r:10px;--sh:0 2px 12px rgba(0,0,0,.08);--sh-lg:0 8px 32px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--g50);color:var(--g900);font-size:15px;line-height:1.5}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:240px;background:var(--black);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s,transform .25s;overflow:hidden;z-index:300}
+.sidebar.collapsed{width:56px}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:56px;background:var(--white);border-bottom:1px solid var(--g200);display:flex;align-items:center;gap:12px;padding:0 20px;flex-shrink:0}
+.screens{flex:1;overflow-y:auto;padding:24px}
+
+/* ── SIDEBAR ── */
+.sb-head{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07);min-height:56px}
+.sb-logo{display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
+.sb-logo svg{flex-shrink:0}
+.sb-logo-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);letter-spacing:-0.5px}
+.sb-toggle{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:4px;border-radius:5px;display:flex;flex-shrink:0}
+.sb-toggle:hover{color:var(--white);background:rgba(255,255,255,.08)}
+.sb-nav{padding:10px 8px;flex:1;overflow-y:auto;overflow-x:hidden}
+.sb-sec{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:10px 8px 4px;white-space:nowrap;overflow:hidden}
+.sidebar.collapsed .sb-sec{opacity:0}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px;border:none;background:none;width:100%;cursor:pointer;color:rgba(255,255,255,.55);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap;overflow:hidden;text-align:left}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.nav-btn.active{background:var(--teal);color:var(--white)}
+.nav-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+.nav-label{overflow:hidden;transition:opacity .2s}
+.sidebar.collapsed .nav-label{opacity:0;width:0}
+.nav-badge{margin-left:auto;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;flex-shrink:0;transition:opacity .2s}
+.nav-btn.active .nav-badge{background:rgba(255,255,255,.25)}
+.sidebar.collapsed .nav-badge{opacity:0;width:0;padding:0}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
+.sb-dot.ok{background:var(--green)}
+.sb-dot.loading{background:var(--amber);animation:blink 1s infinite}
+.sb-status{font-size:11px;color:rgba(255,255,255,.3);overflow:hidden}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── TOPBAR ── */
+.tb-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--black)}
+.tb-title span{color:var(--teal)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-sync{font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:var(--teal-l);color:var(--teal-d);border:none;cursor:pointer;transition:background .15s}
+.tb-sync:hover{background:var(--teal-m)}
+
+/* ── SCREEN ── */
+.screen{display:none;animation:fadeUp .2s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.screen-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.screen-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--black)}
+.screen-title span{color:var(--teal)}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r);overflow:hidden;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-hdr{padding:13px 18px;background:var(--g50);border-bottom:1px solid var(--g200);display:flex;align-items:center;gap:10px}
+.card-ico{width:26px;height:26px;border-radius:6px;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.card-ttl{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--black)}
+.card-body{padding:18px;display:flex;flex-direction:column;gap:14px}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r);padding:14px 16px}
+.stat-n{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--teal);line-height:1}
+.stat-l{font-size:11px;color:var(--g400);margin-top:3px}
+.stat.warn .stat-n{color:var(--amber)}
+.stat.danger .stat-n{color:var(--red)}
+
+/* ── FORM ── */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg .full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.6px}
+.field input,.field select,.field textarea{background:var(--g50);border:1.5px solid var(--g200);border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--g900);width:100%;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal);background:var(--white);box-shadow:0 0 0 3px rgba(61,122,110,.1)}
+.field textarea{resize:none;height:68px;line-height:1.5}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238f9aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--teal);color:var(--white)}.btn-primary:hover{background:var(--teal-d)}
+.btn-secondary{background:var(--g100);color:var(--g600);border:1.5px solid var(--g200)}.btn-secondary:hover{background:var(--g200)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+.btn-lg{padding:13px 26px;font-size:15px;border-radius:10px}
+.btn-full{width:100%}
+.btn-danger{background:var(--red-l);color:var(--red);border:1px solid #fed7d7}
+
+/* ── TABLA ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1.5px solid var(--g200)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--white)}
+thead th{background:var(--black);color:var(--white);padding:9px 14px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--g100);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--g50)}
+.td-act{display:flex;gap:5px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.b-ok{background:var(--green-l);color:var(--green)}
+.b-warn{background:var(--amber-l);color:var(--amber)}
+.b-danger{background:var(--red-l);color:var(--red)}
+.b-teal{background:var(--teal-l);color:var(--teal-d)}
+.b-gray{background:var(--g100);color:var(--g600)}
+
+/* ── SEARCH ── */
+.search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-box{flex:1;min-width:200px;position:relative}
+.search-box input{width:100%;background:var(--white);border:1.5px solid var(--g200);border-radius:9px;padding:9px 14px 9px 36px;font-size:13px;font-family:'DM Sans',sans-serif}
+.search-box input:focus{outline:none;border-color:var(--teal)}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--g400);font-size:14px;pointer-events:none}
+
+/* ── AUTOCOMPLETE ── */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--teal);border-top:none;border-radius:0 0 10px 10px;max-height:220px;overflow-y:auto;z-index:400;box-shadow:var(--sh);display:none}
+.ac-list.open{display:block}
+.ac-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--g100);transition:background .1s}
+.ac-item:hover,.ac-item:focus{background:var(--teal-l);outline:none}
+.ac-item strong{display:block;font-size:13px;font-weight:600}
+.ac-item span{font-size:11px;color:var(--g400)}
+.ac-empty{padding:14px;text-align:center;color:var(--g400);font-size:12px}
+
+/* ── STEPS ── */
+.steps{display:flex;gap:3px;background:var(--white);border-radius:var(--r);padding:5px;border:1.5px solid var(--g200);margin-bottom:20px}
+.step-pill{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 4px;border-radius:7px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--g400);cursor:pointer;transition:all .2s;white-space:nowrap}
+.step-pill.active{background:var(--teal-l);color:var(--teal-d)}
+.step-pill.done{color:var(--teal)}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--g200);color:var(--g600);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all .2s}
+.step-pill.active .step-n,.step-pill.done .step-n{background:var(--teal);color:var(--white)}
+
+/* ── EXTINTOR ITEM EN ORDEN ── */
+.ext-item{background:var(--g50);border:1.5px solid var(--g200);border-radius:10px;padding:14px;transition:border-color .15s}
+.ext-item:focus-within{border-color:var(--teal)}
+.ext-item-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ext-tag{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--teal-d);background:var(--teal-l);border:1px solid rgba(61,122,110,.2);padding:3px 10px;border-radius:20px}
+.btn-rm{background:none;border:none;color:var(--g400);font-size:16px;cursor:pointer;padding:3px 7px;border-radius:5px;line-height:1;transition:all .15s}
+.btn-rm:hover{color:var(--red);background:var(--red-l)}
+.ext-grid{display:grid;grid-template-columns:1fr 1fr 80px;gap:9px}
+.ext-grid .full{grid-column:1/-1}
+.ext-grid .field input,.ext-grid .field select{font-size:13px;padding:8px 10px}
+.add-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-add{width:100%;background:none;border:2px dashed var(--g200);border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--g400);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-add:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l)}
+.btn-add.qr{border-color:var(--teal);color:var(--teal)}
+
+/* ── TÉCNICO ── */
+.tec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tec-btn{padding:14px 10px;border:2px solid var(--g200);border-radius:10px;background:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%}
+.tec-btn:hover{border-color:var(--teal);background:var(--teal-l)}
+.tec-btn.sel{border-color:var(--teal);background:var(--teal-l)}
+.tec-ico{font-size:22px}
+.tec-name{font-size:13px;font-weight:700;color:var(--black)}
+.tec-check{width:18px;height:18px;border-radius:50%;background:var(--teal);display:none;align-items:center;justify-content:center;color:var(--white);font-size:10px;font-weight:700}
+.tec-btn.sel .tec-check{display:flex}
+.tec-btn.sel .tec-name{color:var(--teal-d)}
+
+/* ── PREVIEW ── */
+.preview{background:var(--white);border:1.5px solid var(--g200);border-radius:var(--r);padding:24px;font-size:13px;line-height:1.6}
+.pv-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:14px;margin-bottom:14px;border-bottom:2px solid var(--g200)}
+.pv-sec{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--teal-l);padding-bottom:4px;margin:13px 0 9px}
+.pv-g2{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
+.pv-f{display:flex;flex-direction:column}
+.pv-l{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.4px;margin-bottom:1px}
+.pv-v{font-weight:500;font-size:13px;padding-bottom:3px;border-bottom:1px solid var(--g200);min-height:20px}
+.pv-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:7px}
+.pv-tbl th{background:var(--black);color:var(--white);padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.pv-tbl td{padding:8px 10px;border-bottom:1px solid var(--g200);vertical-align:middle}
+.pv-tbl tr:nth-child(even) td{background:var(--g50)}
+.pv-totals{display:flex;justify-content:flex-end;gap:22px;margin-top:8px}
+.pv-total-n{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--teal)}
+.pv-total-l{font-size:10px;color:var(--g400);text-transform:uppercase}
+.pv-tec{margin-top:18px;padding:12px 16px;background:var(--teal-l);border-radius:8px;display:flex;align-items:center;gap:10px}
+.pv-footer{margin-top:14px;text-align:center;font-size:10px;color:var(--g400);border-top:1px solid var(--g200);padding-top:10px}
+
+/* ── SHARE ── */
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.btn-share{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--white);cursor:pointer;transition:all .15s}
+.btn-share:active{transform:scale(.97)}
+.btn-wa{background:#25D366}
+.btn-mail{background:#2563EB}
+.btn-print{background:var(--black);grid-column:1/-1}
+
+/* ── ORDER BAR ── */
+.order-bar{background:var(--white);border-top:1px solid var(--g200);padding:12px 24px;display:flex;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,.07);flex-shrink:0}
+.order-bar .btn-primary{flex:1;padding:13px;font-size:14px}
+
+/* ── QR OVERLAY ── */
+.qr-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px}
+.qr-ov.open{display:flex}
+.qr-box{position:relative;width:280px;height:280px;border-radius:16px;overflow:hidden;border:3px solid var(--teal)}
+.qr-box video{width:100%;height:100%;object-fit:cover;display:block}
+.qr-box canvas{display:none}
+.qr-c{position:absolute;width:36px;height:36px;border-color:white;border-style:solid;border-width:0}
+.qr-c.tl{top:8px;left:8px;border-top-width:3px;border-left-width:3px;border-radius:3px 0 0 0}
+.qr-c.tr{top:8px;right:8px;border-top-width:3px;border-right-width:3px;border-radius:0 3px 0 0}
+.qr-c.bl{bottom:8px;left:8px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 3px}
+.qr-c.br{bottom:8px;right:8px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 3px 0}
+.qr-line{position:absolute;left:12px;right:12px;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);animation:scan 2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:12%}50%{top:82%}}
+.qr-hint{color:rgba(255,255,255,.6);font-size:13px;text-align:center}
+.qr-manual{display:flex;gap:8px;width:100%;max-width:280px}
+.qr-manual input{flex:1;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--white)}
+.qr-manual input::placeholder{color:rgba(255,255,255,.3)}
+.qr-manual input:focus{outline:none;border-color:var(--teal)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px;color:var(--g400)}
+.empty-ico{font-size:44px;margin-bottom:12px}
+.empty h3{font-family:'Syne',sans-serif;font-size:18px;color:var(--g600);margin-bottom:5px}
+.empty p{font-size:13px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--black);color:var(--white);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;border-left:3px solid var(--teal);max-width:300px}
+.toast.show{opacity:1;transform:none}
+.toast.err{border-left-color:var(--red)}
+
+/* ── SETUP ── */
+.setup-step{display:flex;gap:14px;padding:16px;background:var(--g50);border-radius:10px;border:1.5px solid var(--g200);margin-bottom:12px}
+.setup-n{width:32px;height:32px;border-radius:50%;background:var(--teal);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;flex-shrink:0}
+.setup-body h4{font-size:14px;font-weight:700;margin-bottom:4px}
+.setup-body p{font-size:12px;color:var(--g600);line-height:1.6}
+code{background:var(--teal-l);color:var(--teal-d);padding:1px 6px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:500}
+.cfg-box{background:var(--white);border:2px solid var(--teal);border-radius:12px;padding:20px;margin-top:16px}
+.cfg-box h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--teal);margin-bottom:14px}
+.alert{border-radius:9px;padding:12px 14px;font-size:12px;margin:10px 0;display:flex;gap:8px;line-height:1.5}
+.alert-ok{background:var(--teal-l);border-left:3px solid var(--teal);color:var(--teal-d)}
+.alert-warn{background:var(--amber-l);border-left:3px solid var(--amber);color:#92400e}
+
+/* ── ETIQUETAS QR ── */
+.etiqueta-prev{width:120px;height:120px;border:1.5px solid var(--g200);border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;background:white;font-size:8px;text-align:center;flex-shrink:0}
+.etiqueta-prev .eq-qr{width:60px;height:60px;display:flex;align-items:center;justify-content:center}
+.etiqueta-prev .eq-serie{font-family:"DM Mono",monospace;font-size:7px;font-weight:700;color:var(--teal-d);word-break:break-all}
+.etiqueta-prev .eq-nombre{font-size:7px;font-weight:600;color:var(--black);line-height:1.2;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.etiqueta-prev .eq-tipo{font-size:6.5px;color:var(--g600)}
+/* ── MOBILE ── */
+.mob-btn{display:none;width:44px;height:44px;border-radius:50%;background:var(--teal);color:var(--white);border:none;font-size:18px;cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--sh-lg);position:fixed;bottom:20px;right:20px;z-index:400}
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299}
+
+@media(max-width:768px){
+  .app{flex-direction:column;height:auto;min-height:100vh}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:240px;transform:translateX(-240px);z-index:300}
+  .sidebar.open{transform:none}
+  .sidebar.collapsed{width:240px}
+  .content{min-height:100vh}
+  .screens{padding:14px;padding-bottom:80px}
+  .mob-btn{display:flex}
+  .mob-overlay.show{display:block}
+  .steps{overflow-x:auto}
+  .step-pill{min-width:80px;font-size:11px}
+  .fg{grid-template-columns:1fr}
+  .fg .full{grid-column:1}
+  .ext-grid{grid-template-columns:1fr 1fr}
+  .add-row{grid-template-columns:1fr 1fr}
+  .order-bar{padding:12px 14px}
+  .pv-g2{grid-template-columns:1fr}
+  .share-grid{grid-template-columns:1fr}
+  .btn-print{grid-column:1}
+  .tec-grid{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:1fr 1fr}
+}
+@media print{
+  body>*{visibility:hidden}
+  #printRoot{visibility:visible;position:fixed;top:0;left:0;width:100%;padding:20px;background:white;font-family:Arial,sans-serif;font-size:13px}
+  #printRoot *{visibility:visible}
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo">
+        <svg width="30" height="30" viewBox="0 0 50 50">
+          <polygon points="25,4 38,26 12,26" fill="#3d7a6e"/>
+          <polygon points="12,28 25,48 2,48" fill="#2d2d2d" stroke="white" stroke-width=".5"/>
+          <polygon points="38,28 50,48 26,48" fill="#6b5b8a"/>
+        </svg>
+        <span class="sb-logo-text">syma</span>
+      </div>
+      <button class="sb-toggle" onclick="toggleSidebar()" title="Colapsar menú">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec">Principal</div>
+      <button class="nav-btn active" data-sc="orden" onclick="navTo(this)">
+        <span class="nav-icon">📋</span><span class="nav-label">Nueva Orden</span>
+      </button>
+      <button class="nav-btn" data-sc="clientes" onclick="navTo(this)">
+        <span class="nav-icon">👥</span><span class="nav-label">Clientes</span>
+        <span class="nav-badge" id="nbCli">—</span>
+      </button>
+      <button class="nav-btn" data-sc="extintores" onclick="navTo(this)">
+        <span class="nav-icon">🧯</span><span class="nav-label">Extintores</span>
+        <span class="nav-badge" id="nbExt">—</span>
+      </button>
+      <div class="sb-sec">Historial</div>
+      <button class="nav-btn" data-sc="ordenes" onclick="navTo(this)">
+        <span class="nav-icon">🕐</span><span class="nav-label">Órdenes</span>
+        <span class="nav-badge" id="nbOrd">0</span>
+      </button>
+      <div class="sb-sec">Config</div>
+      <button class="nav-btn" data-sc="qrgen" onclick="navTo(this)">
+        <span class="nav-icon">🏷️</span><span class="nav-label">Generar QR</span>
+      </button>
+      <button class="nav-btn" data-sc="setup" onclick="navTo(this)">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Google Sheets</span>
+      </button>
+    </nav>
+    <div class="sb-foot">
+      <span class="sb-dot" id="sbDot"></span>
+      <span class="sb-status" id="sbTxt">Sin conectar</span>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <header class="topbar">
+      <div class="tb-title">syma <span>sistema</span></div>
+      <div class="tb-right">
+        <button class="tb-sync" id="tbSync" onclick="cargarDatos(true)">⏳ Cargando...</button>
+      </div>
+    </header>
+
+    <div class="screens">
+
+      <!-- ══ NUEVA ORDEN ══ -->
+      <div class="screen active" id="sc-orden">
+        <div class="steps">
+          <button class="step-pill active" id="sp1" onclick="goStep(1)"><span class="step-n">1</span><span>Empresa</span></button>
+          <button class="step-pill"        id="sp2" onclick="goStep(2)"><span class="step-n">2</span><span>Cliente</span></button>
+          <button class="step-pill"        id="sp3" onclick="goStep(3)"><span class="step-n">3</span><span>Extintores</span></button>
+          <button class="step-pill"        id="sp4" onclick="goStep(4)"><span class="step-n">4</span><span>Resumen</span></button>
+        </div>
+
+        <!-- PASO 1: EMPRESA -->
+        <div id="st1">
+          <div class="card">
+            <div class="card-hdr"><div class="card-ico">🏢</div><span class="card-ttl">Datos de la empresa</span></div>
+            <div class="card-body">
+              <div class="fg">
+                <div class="field"><label>N° de Orden</label><input id="oNum" type="text" placeholder="00123"></div>
+                <div class="field"><label>Fecha</label><input id="oFecha" type="date"></div>
+                <div class="field"><label>Razón Social</label><input id="eNombre" type="text" value="Syma"></div>
+                <div class="field"><label>CUIT</label><input id="eCuit" type="text" placeholder="XX-XXXXXXXX-X"></div>
+                <div class="field full"><label>Dirección</label><input id="eDireccion" type="text" value="Mariano Acosta 1364, Avellaneda"></div>
+                <div class="field"><label>Teléfono</label><input id="eTel" type="tel"></div>
+                <div class="field"><label>Fecha de retiro</label><input id="oRetiro" type="date"></div>
+              </div>
+              <div class="field full">
+                <label>Técnico responsable</label>
+                <div class="tec-grid">
+                  <button type="button" class="tec-btn" id="tec1" onclick="selTec('Sergio Gaston Ponce')">
+                    <span class="tec-ico">👷</span>
+                    <span class="tec-name">Sergio Gaston Ponce</span>
+                    <span class="tec-check">✓</span>
+                  </button>
+                  <button type="button" class="tec-btn" id="tec2" onclick="selTec('Angel Saborit')">
+                    <span class="tec-ico">👷</span>
+                    <span class="tec-name">Angel Saborit</span>
+                    <span class="tec-check">✓</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 2: CLIENTE -->
+        <div id="st2" style="display:none">
+          <div class="card">
+            <div class="card-hdr"><div class="card-ico">👤</div><span class="card-ttl">Datos del cliente</span></div>
+            <div class="card-body">
+              <div class="ac-wrap">
+                <div class="field">
+                  <label>Buscar cliente cargado</label>
+                  <input id="cliQ" type="text" placeholder="Escribí el nombre del cliente..." oninput="filtrarCli(this.value)" onfocus="abrirAC()" onblur="cerrarAC()">
+                </div>
+                <div class="ac-list" id="acList"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="flex:1;height:1px;background:var(--g200)"></div>
+                <span style="font-size:11px;color:var(--g400)">o completar manualmente</span>
+                <div style="flex:1;height:1px;background:var(--g200)"></div>
+              </div>
+              <div class="fg">
+                <div class="field full"><label>Razón Social / Nombre</label><input id="cNombre" type="text"></div>
+                <div class="field full"><label>Dirección</label><input id="cDir" type="text"></div>
+                <div class="field"><label>Localidad</label><input id="cLoc" type="text"></div>
+                <div class="field"><label>Provincia</label><input id="cProv" type="text"></div>
+                <div class="field"><label>Teléfono</label><input id="cTel" type="tel"></div>
+                <div class="field"><label>Email</label><input id="cEmail" type="email"></div>
+                <div class="field"><label>Contacto</label><input id="cContacto" type="text"></div>
+                <div class="field"><label>Horario</label><input id="cHorario" type="text"></div>
+                <div class="field full"><label>Observaciones</label><textarea id="cObs"></textarea></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3: EXTINTORES -->
+        <div id="st3" style="display:none">
+          <div class="card">
+            <div class="card-hdr"><div class="card-ico">🧯</div><span class="card-ttl">Extintores a retirar</span></div>
+            <div class="card-body">
+              <div id="extList" style="display:flex;flex-direction:column;gap:10px"></div>
+              <div class="add-row">
+                <button class="btn-add" onclick="addExt()">＋ Agregar</button>
+                <button class="btn-add qr" onclick="abrirQR()">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3m0 3h3m0-3v3"/></svg>
+                  Escanear QR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 4: RESUMEN -->
+        <div id="st4" style="display:none">
+          <div class="card">
+            <div class="card-hdr"><div class="card-ico">📄</div><span class="card-ttl">Resumen de la orden</span></div>
+            <div class="card-body">
+              <div class="preview" id="printArea"></div>
+              <div id="shareLinks" style="display:none"></div>
+              <div class="share-grid">
+                <button class="btn-share btn-wa" onclick="shareWA()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                  WhatsApp
+                </button>
+                <button class="btn-share btn-mail" onclick="shareMail()">✉️ Email</button>
+                <button class="btn-share btn-print" onclick="imprimirOrden()">🖨️ Imprimir / PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /sc-orden -->
+
+      <!-- ══ CLIENTES ══ -->
+      <div class="screen" id="sc-clientes">
+        <div class="screen-hdr">
+          <div class="screen-title">👥 <span>Clientes</span></div>
+          <button class="btn btn-secondary btn-sm" onclick="cargarDatos(true)">🔄 Actualizar</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-n" id="stCli">—</div><div class="stat-l">Clientes</div></div>
+          <div class="stat"><div class="stat-n" id="stExt">—</div><div class="stat-l">Extintores</div></div>
+          <div class="stat danger"><div class="stat-n" id="stRej">—</div><div class="stat-l">Rechazados</div></div>
+          <div class="stat warn"><div class="stat-n" id="stVenc">—</div><div class="stat-l">A vencer</div></div>
+          <div class="stat danger"><div class="stat-n" id="stVencido">—</div><div class="stat-l">Vencidos</div></div>
+        </div>
+        <div class="search-row">
+          <div class="search-box"><span class="search-ico">🔍</span><input type="text" id="cliSearch" placeholder="Buscar cliente..." oninput="renderClientes()"></div>
+        </div>
+        <div id="cliTable"></div>
+      </div>
+
+      <!-- ══ EXTINTORES ══ -->
+      <div class="screen" id="sc-extintores">
+        <div class="screen-hdr">
+          <div class="screen-title">🧯 <span>Extintores</span></div>
+          <button class="btn btn-secondary btn-sm" onclick="cargarDatos(true)">🔄 Actualizar</button>
+        </div>
+        <div class="search-row">
+          <div class="search-box"><span class="search-ico">🔍</span><input type="text" id="extSearch" placeholder="Serie, tipo, cliente, ubicación..." oninput="renderExtintores()"></div>
+          <select id="extFiltro" onchange="renderExtintores()" style="padding:9px 12px;border:1.5px solid var(--g200);border-radius:9px;font-size:13px;background:white;font-family:'DM Sans',sans-serif">
+            <option value="">Todos</option>
+            <option value="OPERATIVO">✅ Operativo</option>
+            <option value="RECHAZADO">⛔ Rechazado</option>
+            <option value="RESERVA">📦 Reserva</option>
+            <option value="PRESTAMO">🔄 Préstamo</option>
+            <option value="DESPRESURIZADO">⚠️ Despresurizado</option>
+            <option value="A_VENCER">🟡 A vencer</option>
+            <option value="VENCIDO">🔴 Vencido</option>
+            <option value="VIDA_UTIL">⏳ Vida útil por vencer</option>
+          </select>
+        </div>
+        <div id="extTable"></div>
+      </div>
+
+      <!-- ══ ORDENES ══ -->
+      <div class="screen" id="sc-ordenes">
+        <div class="screen-hdr"><div class="screen-title">🕐 <span>Órdenes</span></div></div>
+        <div id="ordTable"></div>
+      </div>
+
+      <!-- ══ GENERAR QR ══ -->
+      <div class="screen" id="sc-qrgen">
+        <div class="screen-hdr">
+          <div class="screen-title">🏷️ <span>Generar QR</span></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-ico">🏢</div><span class="card-ttl">Seleccionar empresa</span></div>
+          <div class="card-body">
+            <div class="field">
+              <label>Empresa</label>
+              <select id="qrEmpresa" onchange="previsualizarQR()">
+                <option value="">— Seleccioná una empresa —</option>
+              </select>
+            </div>
+            <div id="qrResumen" style="font-size:13px;color:var(--g400);margin-top:-6px"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="generarPDFQR()">📄 Generar PDF con QR</button>
+              <button class="btn btn-secondary" onclick="previsualizarQR()">👁️ Previsualizar</button>
+            </div>
+          </div>
+        </div>
+        <div id="qrPreview" style="display:none">
+          <div class="card">
+            <div class="card-hdr"><div class="card-ico">👁️</div><span class="card-ttl">Vista previa etiquetas</span></div>
+            <div class="card-body">
+              <div id="qrLabelsPreview" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SETUP ══ -->
+      <div class="screen" id="sc-setup">
+        <div class="screen-title" style="margin-bottom:20px">⚙️ <span>Google Sheets</span></div>
+        <div style="max-width:600px">
+          <div class="setup-step"><div class="setup-n">1</div><div class="setup-body"><h4>Ejecutar el script de importación</h4><p>Abrí <strong>script.google.com</strong>, pegá el archivo <code>syma_sheets_sync.gs</code> y ejecutá <code>sincronizarPorPartes()</code> hasta que diga COMPLETO.</p></div></div>
+          <div class="setup-step"><div class="setup-n">2</div><div class="setup-body"><h4>Hacer el Sheet público (solo lectura)</h4><p>Abrí el Sheet maestro en Drive → Compartir → <strong>"Cualquier persona con el enlace puede ver"</strong>.</p></div></div>
+          <div class="setup-step"><div class="setup-n">3</div><div class="setup-body"><h4>Pegar el ID del Sheet acá abajo</h4><p>La URL del Sheet es: <code>docs.google.com/spreadsheets/d/<strong>ESTE_ES_EL_ID</strong>/edit</code></p></div></div>
+          <div class="cfg-box">
+            <h3>🔗 Conectar</h3>
+            <div class="field" style="margin-bottom:14px">
+              <label>ID del Google Sheet</label>
+              <input id="cfgId" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="guardarCfg()">💾 Guardar y conectar</button>
+              <button class="btn btn-secondary" onclick="cargarDatos(true)">🔄 Probar</button>
+            </div>
+            <div id="cfgMsg" style="margin-top:10px;font-size:13px;color:var(--g400)"></div>
+            <div class="alert alert-ok" style="margin-top:12px">💡 El Sheet ID ya viene configurado por defecto. Solo cambiarlo si usás un Sheet diferente.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screens -->
+
+    <!-- ORDER BAR -->
+    <div class="order-bar" id="orderBar">
+      <button class="btn btn-secondary" id="btnBack" onclick="prevStep()" style="display:none">← Atrás</button>
+      <button class="btn btn-primary" id="btnNext" onclick="nextStep()">Siguiente →</button>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- QR OVERLAY -->
+<div class="qr-ov" id="qrOv">
+  <div class="qr-box">
+    <video id="qrVideo" autoplay playsinline muted></video>
+    <canvas id="qrCanvas"></canvas>
+    <div class="qr-c tl"></div><div class="qr-c tr"></div>
+    <div class="qr-c bl"></div><div class="qr-c br"></div>
+    <div class="qr-line"></div>
+  </div>
+  <div class="qr-hint">Apuntá la cámara al código QR del extintor</div>
+  <div class="qr-manual">
+    <input type="text" id="qrInput" placeholder="O ingresá el N° de serie..." onkeydown="if(event.key==='Enter')qrManual()">
+    <button class="btn btn-primary btn-sm" onclick="qrManual()">OK</button>
+  </div>
+  <button class="btn btn-secondary" onclick="cerrarQR()" style="background:rgba(255,255,255,.1);color:white;border-color:rgba(255,255,255,.2)">✕ Cerrar</button>
+</div>
+
+<!-- MOBILE FAB -->
+<div class="mob-overlay" id="mobOv" onclick="cerrarMob()"></div>
+<button class="mob-btn" id="mobBtn" onclick="abrirMob()">☰</button>
+
+<!-- PRINT ROOT -->
+<div id="printRoot" style="display:none"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const SHEET_ID_DEFAULT = '1ieV0V8ZnbN2xzC-Vfh0mBw5Ku6wM9mLvWFjDLZg6uDU';
+let CFG = { sheetId: SHEET_ID_DEFAULT };
+
+const TIPOS = ['Polvo ABC','CO₂','Agua B/P','Halón','Polvo BC','AFFF Espuma','HCFC','AK','Otro'];
+const CAPS  = ['1 kg','2.5 kg','3.5 kg','5 kg','6 lts','10 kg','10 lt','25 kg','50 kg','70 kg','100 kg','Otro'];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let DB = { clientes:[], extintores:[], ordenes:[] };
+let curStep = 1;
+let ordExts = [];
+let tecnico = '';
+
+// ═══════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+function abrirMob() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('mobOv').classList.add('show');
+  document.getElementById('mobBtn').style.display = 'none';
+}
+function cerrarMob() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobOv').classList.remove('show');
+  document.getElementById('mobBtn').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════
+function navTo(btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sc = btn.dataset.sc;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('sc-' + sc).classList.add('active');
+  document.getElementById('orderBar').style.display = sc === 'orden' ? 'flex' : 'none';
+  if (sc === 'clientes')   renderClientes();
+  if (sc === 'extintores') renderExtintores();
+  if (sc === 'ordenes')    renderOrdenes();
+  if (sc === 'setup') {
+    const campo = document.getElementById('cfgId');
+    if (campo) campo.value = CFG.sheetId || '';
+  }
+  if (window.innerWidth <= 768) cerrarMob();
+}
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS — CARGAR DATOS
+// ═══════════════════════════════════════════════
+function sheetCsvUrl(hoja) {
+  return `https://docs.google.com/spreadsheets/d/${CFG.sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(hoja)}`;
+}
+
+function csvParse(txt) {
+  const rows = [];
+  for (const line of txt.split('\n')) {
+    if (!line.trim()) continue;
+    const row = []; let inside = false, cell = '';
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (inside && line[i+1]==='"') { cell+='"'; i++; } else inside=!inside; }
+      else if (c === ',' && !inside) { row.push(cell.trim()); cell=''; }
+      else cell += c;
+    }
+    row.push(cell.trim()); rows.push(row);
+  }
+  return rows;
+}
+
+async function cargarDatos(forzar = false) {
+  if (!CFG.sheetId) { setStatus('gray','Sin configurar'); return; }
+  setStatus('loading','Cargando...');
+  document.getElementById('tbSync').textContent = '⏳ Actualizando...';
+  try {
+    // Clientes
+    const rCli = await fetch(sheetCsvUrl('Clientes'));
+    if (!rCli.ok) throw new Error('Error ' + rCli.status + ' al leer Clientes');
+    const dCli = csvParse(await rCli.text());
+    const hCli = dCli[0];
+    DB.clientes = dCli.slice(1).map(r => ({
+      nombre:    r[hCli.indexOf('NOMBRE')]     || '',
+      cuit:      r[hCli.indexOf('CUIT')]        || '',
+      direccion: r[hCli.indexOf('DIRECCION')]   || '',
+      localidad: r[hCli.indexOf('LOCALIDAD')]   || '',
+      provincia: r[hCli.indexOf('PROVINCIA')]   || '',
+      telefono:  r[hCli.indexOf('TELEFONO')]    || '',
+      email:     r[hCli.indexOf('EMAIL')]       || '',
+      contacto:  r[hCli.indexOf('CONTACTO')]    || '',
+      horario:   r[hCli.indexOf('HORARIO')]     || '',
+      obs:       r[hCli.indexOf('OBSERVACIONES')]|| '',
+      totalExt:  r[hCli.indexOf('TOTAL_EXTINTORES')] || '0',
+    })).filter(c => c.nombre);
+
+    // Extintores
+    const rExt = await fetch(sheetCsvUrl('Extintores'));
+    if (!rExt.ok) throw new Error('Error ' + rExt.status + ' al leer Extintores');
+    const dExt = csvParse(await rExt.text());
+    const hExt = dExt[0];
+    DB.extintores = dExt.slice(1).map(r => ({
+      cliente:   r[hExt.indexOf('CLIENTE')]    || '',
+      item:      r[hExt.indexOf('ITEM')]       || '',
+      tipo:      r[hExt.indexOf('TIPO')]       || '',
+      capacidad: r[hExt.indexOf('CAPACIDAD')]  || '',
+      serie:     r[hExt.indexOf('N_SERIE')]    || '',
+      vencMes:   r[hExt.indexOf('VENC_MES')]  || '',
+      vencAnio:  r[hExt.indexOf('VENC_ANIO')] || '',
+      estado:    r[hExt.indexOf('ESTADO')]     || 'OPERATIVO',
+      ubicacion: r[hExt.indexOf('UBICACION')] || '',
+      puesto:    r[hExt.indexOf('PUESTO')]     || '',
+    })).filter(e => e.tipo || e.serie);
+
+    setStatus('ok', 'Conectado · ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('tbSync').textContent = '🟢 Actualizar datos';
+    actualizarBadges();
+    renderClientes();
+    renderExtintores();
+    sessionStorage.setItem('syma_db', JSON.stringify(DB));
+    toast('✓ ' + DB.clientes.length + ' clientes · ' + DB.extintores.length + ' extintores');
+    poblarSelectorEmpresas();
+  } catch(e) {
+    setStatus('gray','Error al conectar');
+    document.getElementById('tbSync').textContent = '🔴 Reintentar';
+    toast('❌ ' + e.message, true);
+    const cache = sessionStorage.getItem('syma_db');
+    if (cache) { DB = JSON.parse(cache); actualizarBadges(); renderClientes(); renderExtintores(); }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// STATS & BADGES
+// ═══════════════════════════════════════════════
+function actualizarBadges() {
+  const ahora    = new Date();
+  const hoyTotal = ahora.getFullYear()*12 + ahora.getMonth()+1;
+  const rej      = DB.extintores.filter(e => (e.estado||'').toUpperCase()==='RECHAZADO').length;
+  const aVencer  = DB.extintores.filter(e => {
+    const mes=parseInt(e.vencMes)||0, anio=parseInt(e.vencAnio)||0;
+    if(!mes||!anio) return false;
+    const v=anio*12+mes; return v===hoyTotal||v===hoyTotal+1;
+  }).length;
+  const vencidos = DB.extintores.filter(e => {
+    const mes=parseInt(e.vencMes)||0, anio=parseInt(e.vencAnio)||0;
+    if(!mes||!anio) return false;
+    return (anio*12+mes) < hoyTotal;
+  }).length;
+  document.getElementById('nbCli').textContent    = DB.clientes.length;
+  document.getElementById('nbExt').textContent    = DB.extintores.length;
+  document.getElementById('nbOrd').textContent    = DB.ordenes.length;
+  document.getElementById('stCli').textContent    = DB.clientes.length;
+  document.getElementById('stExt').textContent    = DB.extintores.length;
+  document.getElementById('stRej').textContent    = rej;
+  const elVenc   = document.getElementById('stVenc');
+  const elVencido = document.getElementById('stVencido');
+  if(elVenc)    elVenc.textContent    = aVencer;
+  if(elVencido) elVencido.textContent = vencidos;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER CLIENTES
+// ═══════════════════════════════════════════════
+function renderClientes() {
+  const q = (document.getElementById('cliSearch')?.value || '').toLowerCase();
+  const list = q ? DB.clientes.filter(c =>
+    c.nombre.toLowerCase().includes(q) ||
+    (c.localidad||'').toLowerCase().includes(q) ||
+    (c.direccion||'').toLowerCase().includes(q)
+  ) : DB.clientes;
+  const el = document.getElementById('cliTable');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ico">${q?'🔍':'👥'}</div><h3>${q?'Sin resultados':'Sin clientes'}</h3><p>${q?'Probá con otro término':'Sincronizá los datos primero'}</p></div>`;
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table>' +
+    '<thead><tr><th>Cliente</th><th>Dirección</th><th>Localidad</th><th>Extintores</th><th>Observaciones</th><th>Acciones</th></tr></thead>' +
+    '<tbody>' + list.map(c =>
+      '<tr>' +
+      '<td><strong>' + c.nombre + '</strong></td>' +
+      '<td>' + (c.direccion||'—') + '</td>' +
+      '<td>' + (c.localidad||'—') + '</td>' +
+      '<td><span class="badge b-teal">' + (c.totalExt||'0') + '</span></td>' +
+      '<td style="font-size:12px;color:var(--g600);max-width:160px">' + (c.obs||'—') + '</td>' +
+      '<td><div class="td-act">' +
+        '<button class="btn btn-primary btn-sm" onclick="cargarCliEnOrden('' + esc(c.nombre) + '')">📋 Orden</button>' +
+        '<button class="btn btn-secondary btn-sm" onclick="verExtCliente('' + esc(c.nombre) + '')">🧯 Ver</button>' +
+      '</div></td>' +
+      '</tr>'
+    ).join('') +
+    '</tbody></table></div>';
+}
+
+// ═══════════════════════════════════════════════
+// RENDER EXTINTORES
+// ═══════════════════════════════════════════════
+function renderExtintores() {
+  const q      = (document.getElementById('extSearch')?.value || '').toLowerCase();
+  const filtro = document.getElementById('extFiltro')?.value || '';
+  const el     = document.getElementById('extTable');
+  if (!el) return;
+  let list = DB.extintores;
+  if (q)      list = list.filter(e => (e.serie||'').toLowerCase().includes(q)||(e.tipo||'').toLowerCase().includes(q)||(e.cliente||'').toLowerCase().includes(q)||(e.ubicacion||'').toLowerCase().includes(q));
+  if (filtro) {
+    list = list.filter(e => {
+      const est = (e.estado||'').toUpperCase();
+      if (filtro === 'A_VENCER') {
+        const mes=parseInt(e.vencMes)||0, anio=parseInt(e.vencAnio)||0;
+        if (!mes||!anio) return false;
+        const ahora=new Date(), hoyTotal=(ahora.getFullYear()*12+ahora.getMonth()+1);
+        const vencTotal=anio*12+mes;
+        return vencTotal===hoyTotal || vencTotal===hoyTotal+1;
+      }
+      if (filtro === 'VENCIDO') {
+        const mes=parseInt(e.vencMes)||0, anio=parseInt(e.vencAnio)||0;
+        if (!mes||!anio) return false;
+        const ahora=new Date(), hoyTotal=(ahora.getFullYear()*12+ahora.getMonth()+1);
+        return (anio*12+mes) < hoyTotal;
+      }
+      if (filtro === 'VIDA_UTIL') {
+        const anio=parseInt(e.vencAnio)||0;
+        return anio && anio <= new Date().getFullYear();
+      }
+      return est === filtro;
+    });
+  }
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ico">🧯</div><h3>Sin extintores</h3><p>Sincronizá los datos desde el Sheet</p></div>`;
+    return;
+  }
+  const calcEstado = (e) => {
+    const est = (e.estado||'').toUpperCase();
+    if (est === 'RECHAZADO')      return { label:'Rechazado',     cls:'b-danger' };
+    if (est === 'RESERVA')        return { label:'Reserva',       cls:'b-gray'   };
+    if (est === 'PRESTAMO')       return { label:'Prestamo',      cls:'b-teal'   };
+    if (est === 'DESPRESURIZADO') return { label:'Despresurizado', cls:'b-warn'  };
+    // Calcular a vencer / vencido por fecha
+    const mes  = parseInt(e.vencMes)  || 0;
+    const anio = parseInt(e.vencAnio) || 0;
+    if (mes && anio) {
+      const ahora     = new Date();
+      const aMes      = ahora.getMonth() + 1;
+      const aAnio     = ahora.getFullYear();
+      const vencTotal = anio * 12 + mes;
+      const hoyTotal  = aAnio * 12 + aMes;
+      if (vencTotal < hoyTotal)     return { label:'Vencido',    cls:'b-danger' };
+      if (vencTotal === hoyTotal)   return { label:'A vencer',   cls:'b-warn'   };
+      if (vencTotal === hoyTotal+1) return { label:'A vencer',   cls:'b-warn'   };
+    }
+    // Vida util por vencer
+    const vidaUtil = parseInt(e.vidaUtil) || 0;
+    if (vidaUtil) {
+      // si tiene vida util cargada y vence este año
+      const anioVida = parseInt(e.vencAnio) || 0;
+      if (anioVida && anioVida <= new Date().getFullYear())
+        return { label:'Vida util', cls:'b-warn' };
+    }
+    return { label:'Operativo', cls:'b-ok' };
+  };
+  const bdg = e => { const s=calcEstado(e); return '<span class="badge '+s.cls+'">'+s.label+'</span>'; };
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>N° Serie</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Vencimiento</th><th>Cliente</th><th>Ubicación</th></tr></thead>
+    <tbody>${list.map(e=>`<tr>
+      <td><strong style="font-family:'DM Mono',monospace">${e.serie||'—'}</strong></td>
+      <td>${e.tipo||'—'}</td><td>${e.capacidad||'—'}</td>
+      <td>${bdg(e)}</td>
+      <td>${e.vencMes&&e.vencAnio?e.vencMes+'/'+e.vencAnio:'—'}</td>
+      <td>${e.cliente||'—'}</td>
+      <td>${e.ubicacion||e.puesto||'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// AUTOCOMPLETE CLIENTES
+// ═══════════════════════════════════════════════
+function filtrarCli(q) {
+  const lista = document.getElementById('acList');
+  lista.classList.add('open');
+  const m = q ? DB.clientes.filter(c => c.nombre.toLowerCase().includes(q.toLowerCase()) || (c.localidad||'').toLowerCase().includes(q.toLowerCase())).slice(0,8) : DB.clientes.slice(0,8);
+  lista.innerHTML = m.length
+    ? m.map(c=>`<div class="ac-item" onmousedown="selCli('${esc(c.nombre)}')"><strong>${c.nombre}</strong><span>${c.direccion||''}${c.localidad?', '+c.localidad:''}</span></div>`).join('')
+    : '<div class="ac-empty">Sin resultados</div>';
+}
+function abrirAC()  { filtrarCli(document.getElementById('cliQ').value); }
+function cerrarAC() { setTimeout(()=>document.getElementById('acList').classList.remove('open'),200); }
+function selCli(nombre) {
+  cargarCliEnOrden(nombre);
+  document.getElementById('cliQ').value = '';
+}
+
+// ═══════════════════════════════════════════════
+// CARGAR CLIENTE EN ORDEN
+// ═══════════════════════════════════════════════
+function cargarCliEnOrden(nombre) {
+  const c = DB.clientes.find(x=>x.nombre===nombre);
+  if (!c) return;
+  document.getElementById('cNombre').value   = c.nombre;
+  document.getElementById('cDir').value      = c.direccion||'';
+  document.getElementById('cLoc').value      = c.localidad||'';
+  document.getElementById('cProv').value     = c.provincia||'';
+  document.getElementById('cTel').value      = c.telefono||'';
+  document.getElementById('cEmail').value    = c.email||'';
+  document.getElementById('cContacto').value = c.contacto||'';
+  document.getElementById('cHorario').value  = c.horario||'';
+  document.getElementById('cObs').value      = c.obs||'';
+  document.querySelector('[data-sc="orden"]').click();
+  goStep(2);
+  toast('✓ ' + c.nombre + ' cargado');
+}
+
+function verExtCliente(nombre) {
+  document.getElementById('extSearch').value = nombre;
+  document.querySelector('[data-sc="extintores"]').click();
+  renderExtintores();
+}
+
+// ═══════════════════════════════════════════════
+// ORDEN — STEPS
+// ═══════════════════════════════════════════════
+function goStep(n) {
+  for (let i=1;i<=4;i++) {
+    const st = document.getElementById('st'+i);
+    const sp = document.getElementById('sp'+i);
+    if (st) st.style.display = i===n ? 'block' : 'none';
+    if (sp) sp.className = 'step-pill'+(i===n?' active':i<n?' done':'');
+  }
+  curStep = n;
+  document.getElementById('btnBack').style.display = n>1 ? 'flex' : 'none';
+  document.getElementById('btnNext').textContent = n<4 ? 'Siguiente →' : '✓ Nueva orden';
+  if (n===4) renderPreview();
+  window.scrollTo(0,0);
+}
+function nextStep() { curStep<4 ? goStep(curStep+1) : (confirm('¿Crear nueva orden?') && resetOrden()); }
+function prevStep() { curStep>1 && goStep(curStep-1); }
+
+// ═══════════════════════════════════════════════
+// TÉCNICO
+// ═══════════════════════════════════════════════
+function selTec(nombre) {
+  tecnico = nombre;
+  document.getElementById('tec1').classList.toggle('sel', nombre==='Sergio Gaston Ponce');
+  document.getElementById('tec2').classList.toggle('sel', nombre==='Angel Saborit');
+  toast('Técnico: ' + nombre);
+}
+
+// ═══════════════════════════════════════════════
+// EXTINTORES EN ORDEN
+// ═══════════════════════════════════════════════
+function addExt() {
+  ordExts.push({ id:Date.now(), tipo:'', cap:'', qty:'1', prestamo:'0', obs:'' });
+  renderExtList();
+}
+function rmExt(id)        { ordExts = ordExts.filter(e=>e.id!==id); renderExtList(); }
+function updExt(id,k,v)   { const e=ordExts.find(x=>x.id===id); if(e) e[k]=v; }
+
+function renderExtList() {
+  const el = document.getElementById('extList');
+  if (!ordExts.length) {
+    el.innerHTML = '<div class="empty" style="padding:20px 0"><div class="empty-ico">🧯</div><p>Agregá extintores a retirar</p></div>';
+    return;
+  }
+  el.innerHTML = ordExts.map((e,i)=>`
+    <div class="ext-item">
+      <div class="ext-item-hdr"><span class="ext-tag">EXTINTOR ${i+1}</span><button class="btn-rm" onclick="rmExt(${e.id})">✕</button></div>
+      <div class="ext-grid">
+        <div class="field"><label>Tipo</label>
+          <select onchange="updExt(${e.id},'tipo',this.value)">
+            <option value="">Seleccionar...</option>
+            ${TIPOS.map(t=>`<option${e.tipo===t?' selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Capacidad</label>
+          <select onchange="updExt(${e.id},'cap',this.value)">
+            <option value="">Seleccionar...</option>
+            ${CAPS.map(c=>`<option${e.cap===c?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Cant.</label><input type="number" min="1" value="${e.qty}" placeholder="1" oninput="updExt(${e.id},'qty',this.value)"></div>
+        <div class="field"><label>Préstamo</label><input type="number" min="0" value="${e.prestamo}" placeholder="0" oninput="updExt(${e.id},'prestamo',this.value)"></div>
+        <div class="field full"><label>Observación</label><input type="text" value="${e.obs||''}" placeholder="Estado, notas..." oninput="updExt(${e.id},'obs',this.value)"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// QR SCANNER
+// ═══════════════════════════════════════════════
+let qrStream=null, qrTimer=null;
+
+function abrirQR() {
+  document.getElementById('qrOv').classList.add('open');
+  document.getElementById('qrInput').value = '';
+  iniciarCamara();
+}
+function cerrarQR() {
+  document.getElementById('qrOv').classList.remove('open');
+  detenerCamara();
+}
+async function iniciarCamara() {
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v = document.getElementById('qrVideo');
+    v.srcObject = qrStream;
+    await v.play();
+    if ('BarcodeDetector' in window) {
+      const det = new BarcodeDetector({formats:['qr_code']});
+      qrTimer = setInterval(async()=>{ try{ const c=await det.detect(v); if(c.length) procesarQR(c[0].rawValue); }catch(e){} },400);
+    } else {
+      cargarJsQR();
+    }
+  } catch(e) { toast('Sin acceso a la cámara. Ingresá el número manualmente.',true); }
+}
+function detenerCamara() {
+  if (qrTimer) { clearInterval(qrTimer); qrTimer=null; }
+  if (qrStream) { qrStream.getTracks().forEach(t=>t.stop()); qrStream=null; }
+  const v=document.getElementById('qrVideo'); if(v) v.srcObject=null;
+}
+function cargarJsQR() {
+  if (window.jsQR) { iniciarCanvas(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+  s.onload=iniciarCanvas;
+  document.head.appendChild(s);
+}
+function iniciarCanvas() {
+  const v=document.getElementById('qrVideo'), c=document.getElementById('qrCanvas'), ctx=c.getContext('2d');
+  qrTimer=setInterval(()=>{
+    if(v.readyState!==v.HAVE_ENOUGH_DATA) return;
+    c.width=v.videoWidth; c.height=v.videoHeight;
+    ctx.drawImage(v,0,0);
+    const img=ctx.getImageData(0,0,c.width,c.height);
+    const code=jsQR(img.data,img.width,img.height);
+    if(code) procesarQR(code.data);
+  },350);
+}
+function procesarQR(raw) {
+  let serie=raw.trim();
+  try { const u=new URL(raw); serie=u.searchParams.get('serie')||raw; } catch(e) {}
+  if (!serie) return;
+  detenerCamara(); cerrarQR();
+  const ext=DB.extintores.find(e=>e.serie===serie);
+  if (ext) {
+    ordExts.push({id:Date.now(),tipo:ext.tipo||'',cap:ext.capacidad||'',qty:'1',prestamo:'0',obs:ext.ubicacion?'Ubic: '+ext.ubicacion:''});
+    renderExtList();
+    toast('✅ '+ext.tipo+' '+ext.capacidad+' — '+ext.cliente);
+  } else {
+    ordExts.push({id:Date.now(),tipo:'',cap:'',qty:'1',prestamo:'0',obs:'QR: '+serie});
+    renderExtList();
+    toast('⚠️ Serie '+serie+' no encontrada. Completá manualmente.',true);
+  }
+}
+function qrManual() {
+  const v=document.getElementById('qrInput').value.trim();
+  if(v) procesarQR(v);
+}
+
+// ═══════════════════════════════════════════════
+// PREVIEW & PRINT
+// ═══════════════════════════════════════════════
+const gv = id => { const e=document.getElementById(id); return e?(e.value||'—'):'—'; };
+const fd = d => { if(!d||d==='—') return '—'; const[y,m,day]=d.split('-'); return`${day}/${m}/${y}`; };
+
+function renderPreview() {
+  const totalU = ordExts.reduce((s,e)=>s+(parseInt(e.qty)||0),0);
+  const totalP = ordExts.reduce((s,e)=>s+(parseInt(e.prestamo)||0),0);
+  const rows = ordExts.length
+    ? ordExts.map((e,i)=>`<tr><td style="text-align:center;font-weight:700;color:var(--teal)">${i+1}</td><td>${e.tipo||'—'}</td><td>${e.cap||'—'}</td><td style="text-align:center;font-weight:700">${e.qty||'—'}</td><td style="text-align:center">${e.prestamo||'—'}</td><td>${e.obs||'—'}</td></tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:var(--g400);padding:14px">Sin extintores</td></tr>`;
+
+  document.getElementById('printArea').innerHTML = `
+    <div class="pv-hdr">
+      <div>
+        <svg width="90" height="28" viewBox="0 0 160 50"><text x="2" y="38" font-family="Georgia,serif" font-size="36" font-weight="700" fill="#1a1a1a" letter-spacing="-1">syma</text><polygon points="134,8 143,24 125,24" fill="#3d7a6e"/><polygon points="125,26 134,40 116,40" fill="#1a1a1a"/><polygon points="143,26 152,40 134,40" fill="#6b5b8a"/></svg>
+        <div style="font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase;letter-spacing:.5px">Orden de trabajo · Retiro de extintores</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--g400);text-transform:uppercase">N° de orden</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--teal)">${gv('oNum')}</div>
+        <div style="font-size:12px;color:var(--g600)">${fd(document.getElementById('oFecha').value)}</div>
+      </div>
+    </div>
+    <div class="pv-sec">Empresa</div>
+    <div class="pv-g2">
+      <div class="pv-f"><span class="pv-l">Razón Social</span><span class="pv-v">${gv('eNombre')}</span></div>
+      <div class="pv-f"><span class="pv-l">CUIT</span><span class="pv-v">${gv('eCuit')}</span></div>
+      <div class="pv-f"><span class="pv-l">Dirección</span><span class="pv-v">${gv('eDireccion')}</span></div>
+      <div class="pv-f"><span class="pv-l">Fecha de retiro</span><span class="pv-v">${fd(document.getElementById('oRetiro').value)}</span></div>
+    </div>
+    <div class="pv-sec">Cliente</div>
+    <div class="pv-g2">
+      <div class="pv-f" style="grid-column:1/-1"><span class="pv-l">Razón Social</span><span class="pv-v">${gv('cNombre')}</span></div>
+      <div class="pv-f"><span class="pv-l">Dirección</span><span class="pv-v">${gv('cDir')}</span></div>
+      <div class="pv-f"><span class="pv-l">Localidad</span><span class="pv-v">${gv('cLoc')}${gv('cProv')!=='—'?', '+gv('cProv'):''}</span></div>
+      <div class="pv-f"><span class="pv-l">Teléfono</span><span class="pv-v">${gv('cTel')}</span></div>
+      <div class="pv-f"><span class="pv-l">Contacto</span><span class="pv-v">${gv('cContacto')}${gv('cHorario')!=='—'?' ('+gv('cHorario')+')':''}</span></div>
+    </div>
+    <div class="pv-sec">Extintores a retirar</div>
+    <table class="pv-tbl"><thead><tr><th>#</th><th>Tipo</th><th>Capacidad</th><th>Cant.</th><th>Préstamo</th><th>Observación</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="pv-totals">
+      <div><div class="pv-total-n">${totalU}</div><div class="pv-total-l">Unidades</div></div>
+      ${totalP?`<div><div class="pv-total-n" style="color:var(--violet)">${totalP}</div><div class="pv-total-l">Préstamo</div></div>`:''}
+    </div>
+    <div class="pv-tec"><span style="font-size:18px">👷</span><div><div style="font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Técnico responsable</div><div style="font-weight:700;font-size:14px;color:var(--teal-d)">${tecnico||'(sin seleccionar)'}</div></div></div>
+    <div class="pv-footer">Original: Cliente — Duplicado: Empresa · Syma Extintores · Mariano Acosta 1364, Avellaneda</div>`;
+
+  DB.ordenes.push({ num:gv('oNum'), cliente:gv('cNombre'), fecha:gv('oFecha'), total:totalU });
+  actualizarBadges();
+}
+
+async function imprimirOrden() {
+  renderPreview();
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const W=210, M=15, cW=W-M*2;
+    let y=M;
+    const teal=[61,122,110], negro=[17,17,17], gris=[143,154,170], gris2=[238,240,242];
+
+    // Header
+    doc.setFillColor(...teal); doc.rect(0,0,W,18,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text('syma', M, 12);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('ORDEN DE TRABAJO · RETIRO DE EXTINTORES', M+28, 9);
+    const nOrden = document.getElementById('oNum')?.value || '—';
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('N° '+nOrden, W-M, 12, {align:'right'});
+    const fecha = document.getElementById('oFecha')?.value || '';
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(fecha?fecha.split('-').reverse().join('/'):'—', W-M, 17, {align:'right'});
+    y=25;
+
+    const sec = (t)=>{ doc.setFillColor(...gris2); doc.rect(M,y,cW,6,'F'); doc.setFillColor(...teal); doc.rect(M,y,2,6,'F'); doc.setTextColor(...negro); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(t.toUpperCase(),M+5,y+4); y+=9; };
+    const campo = (l,v,x,w)=>{ doc.setTextColor(...gris); doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.text(l.toUpperCase(),x,y); doc.setTextColor(...negro); doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.text(v||'—',x,y+4.5,{maxWidth:w-2}); doc.setDrawColor(...gris2); doc.line(x,y+6,x+w-3,y+6); };
+
+    // Empresa
+    sec('Empresa');
+    campo('Razón Social', document.getElementById('eNombre')?.value||'Syma', M, cW/2);
+    const fr = document.getElementById('oRetiro')?.value||'';
+    campo('Fecha retiro', fr?fr.split('-').reverse().join('/'):'—', M+cW/2, cW/2);
+    y+=10; campo('Dirección', document.getElementById('eDireccion')?.value||'', M, cW); y+=12;
+
+    // Cliente
+    sec('Cliente');
+    campo('Razón Social', document.getElementById('cNombre')?.value||'', M, cW); y+=10;
+    campo('Dirección', document.getElementById('cDir')?.value||'', M, cW/2);
+    const loc=[document.getElementById('cLoc')?.value||'',document.getElementById('cProv')?.value||''].filter(Boolean).join(', ');
+    campo('Localidad', loc, M+cW/2, cW/2); y+=10;
+    campo('Teléfono', document.getElementById('cTel')?.value||'', M, cW/2);
+    campo('Contacto', document.getElementById('cContacto')?.value||'', M+cW/2, cW/2); y+=12;
+
+    // Extintores
+    sec('Extintores a retirar');
+    const cols=[10,55,30,18,22,cW-135];
+    const heads=['#','Tipo','Capacidad','Cant.','Préstamo','Observación'];
+    doc.setFillColor(...negro); doc.rect(M,y,cW,6,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont('helvetica','bold');
+    let cx=M+2; heads.forEach((h2,i)=>{doc.text(h2,cx,y+4);cx+=cols[i];}); y+=6;
+
+    (ordExts||[]).forEach((e,i)=>{
+      if(y>250){doc.addPage();y=20;}
+      doc.setFillColor(...(i%2===0?[255,255,255]:[247,248,249])); doc.rect(M,y,cW,7,'F');
+      doc.setTextColor(...negro); doc.setFontSize(8);
+      cx=M+2;
+      [String(i+1),e.tipo||'—',e.cap||'—',String(e.qty||0),String(e.prestamo||0),e.obs||'—'].forEach((v,j)=>{
+        doc.setFont('helvetica',j===0?'bold':'normal');
+        doc.text(v,cx,y+4.8,{maxWidth:cols[j]-2}); cx+=cols[j];
+      }); y+=7;
+    });
+
+    const totalU=(ordExts||[]).reduce((s,e)=>s+(parseInt(e.qty)||0),0);
+    y+=4; doc.setFillColor(...[234,243,241]); doc.rect(M,y,cW,10,'F');
+    doc.setTextColor(...teal); doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('Total: '+totalU+' unidades', M+4, y+7); y+=14;
+
+    doc.setFillColor(...[234,243,241]); doc.rect(M,y,cW,10,'F');
+    doc.setTextColor(...gris); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('TÉCNICO RESPONSABLE', M+4, y+4);
+    doc.setTextColor(...[44,92,82]); doc.setFontSize(10); doc.setFont('helvetica','bold');
+    doc.text(tecnico||'(sin seleccionar)', M+4, y+9); y+=16;
+
+    doc.setDrawColor(...gris2); doc.line(M,y,W-M,y); y+=4;
+    doc.setTextColor(...gris); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('Syma Extintores · Mariano Acosta 1364, Avellaneda', M, y);
+
+    const nombre = 'Syma_Orden_'+(nOrden)+'_'+((document.getElementById('cNombre')?.value||'cliente').replace(/\s+/g,'_'))+'.pdf';
+    
+    // Descargar PDF localmente
+    doc.save(nombre);
+    toast('✅ PDF descargado');
+
+    // Guardar en Drive y obtener link para compartir
+    try {
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const cliente   = document.getElementById('cNombre')?.value || '';
+      const webAppUrl = CFG.webAppUrl || localStorage.getItem('syma_webapp_url') || '';
+      if (webAppUrl) {
+        toast('⏳ Guardando en Drive...');
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            accion:   'guardarOrden',
+            nombre:   nombre,
+            pdf:      pdfBase64,
+            cliente:  cliente,
+            nOrden:   nOrden,
+            fecha:    document.getElementById('oFecha')?.value || '',
+          })
+        });
+        const data = await resp.json();
+        if (data.ok && data.link) {
+          // Mostrar botones de compartir con link de Drive
+          mostrarBotonesCompartir(data.link, cliente, nOrden);
+          toast('✅ Guardado en Drive');
+        }
+      }
+    } catch(e) {
+      console.error('Error Drive:', e);
+    }
+
+  } catch(err) {
+    console.error(err);
+    toast('❌ Error: '+err.message, true);
+  }
+}
+
+function mostrarBotonesCompartir(link, cliente, nOrden) {
+  const shareDiv = document.getElementById('shareLinks');
+  if (!shareDiv) return;
+  const linea1 = 'Orden N° ' + nOrden + ' - ' + cliente;
+  const linea2 = 'Ver PDF: ' + link;
+  const txt = linea1 + '%0A' + linea2;
+  const telRaw = document.getElementById('cTel') ? document.getElementById('cTel').value : '';
+  const tel = telRaw.replace(/[^0-9]/g,'');
+  const sep = String.fromCharCode(10);
+  const waLink = tel ? 'https://wa.me/549' + tel + '?text=' + encodeURIComponent(linea1 + sep + linea2) : 'https://wa.me/?text=' + encodeURIComponent(linea1 + sep + linea2);
+  const mailLink = 'mailto:?subject=' + encodeURIComponent(linea1) + '&body=' + encodeURIComponent(linea1 + sep + linea2);
+  const html = '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'
+    + '<div style="font-size:12px;font-weight:600;color:var(--g400)">Compartir orden:</div>'
+    + '<a href="' + waLink + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#25D366;color:white;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">WhatsApp</a>'
+    + '<a href="' + mailLink + '" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#2563EB;color:white;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">Email</a>'
+    + '<a href="' + link + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--teal);color:white;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">Ver en Drive</a>'
+    + '</div>';
+  shareDiv.innerHTML = html;
+  shareDiv.style.display = 'block';
+}
+
+function shareWA() {
+  renderPreview();
+  const txt = buildTxt();
+  const tel = (document.getElementById('cTel').value||'').replace(/\D/g,'');
+  window.open(tel?`https://wa.me/549${tel}?text=${encodeURIComponent(txt)}`:`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');
+}
+function shareMail() {
+  renderPreview();
+  const asunto = encodeURIComponent('Orden N° '+gv('oNum')+' - '+gv('cNombre'));
+  const cuerpo = encodeURIComponent(buildTxt().replace(/\*/g,''));
+  window.open('mailto:'+document.getElementById('cEmail').value+'?subject='+asunto+'&body='+cuerpo,'_blank');
+}
+function buildTxt() {
+  const totalU = ordExts.reduce((s,e)=>s+(parseInt(e.qty)||0),0);
+  return `🧯 *ORDEN DE TRABAJO - RETIRO DE EXTINTORES*\n*N° ${gv('oNum')}* | ${fd(document.getElementById('oFecha').value)}\n\n*EMPRESA:* ${gv('eNombre')}\n${gv('eDireccion')}\n\n*CLIENTE:* ${gv('cNombre')}\n📍 ${gv('cDir')}, ${gv('cLoc')}\n📞 ${gv('cTel')}\n\n*EXTINTORES:*\n${ordExts.map((e,i)=>`  ${i+1}. ${e.tipo||'?'} ${e.cap||''} | Cant: ${e.qty||0}${e.obs?' | '+e.obs:''}`).join('\n')}\n\n📦 Total: *${totalU}* unidades\nFecha retiro: ${fd(document.getElementById('oRetiro').value)}\n👷 Técnico: ${tecnico||'—'}`;
+}
+
+function resetOrden() {
+  ordExts = []; tecnico = '';
+  document.querySelectorAll('#sc-orden input,#sc-orden textarea,#sc-orden select').forEach(el=>el.value='');
+  document.getElementById('eNombre').value    = 'Syma';
+  document.getElementById('eDireccion').value = 'Mariano Acosta 1364, Avellaneda';
+  document.getElementById('oFecha').value     = new Date().toISOString().split('T')[0];
+  document.getElementById('tec1').classList.remove('sel');
+  document.getElementById('tec2').classList.remove('sel');
+  renderExtList();
+  goStep(1);
+  toast('✓ Nueva orden lista');
+}
+
+// ═══════════════════════════════════════════════
+// ORDENES
+// ═══════════════════════════════════════════════
+function renderOrdenes() {
+  const el = document.getElementById('ordTable');
+  if (!el) return;
+  if (!DB.ordenes.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">🕐</div><h3>Sin órdenes</h3><p>Las órdenes generadas aparecen acá</p></div>';
+    return;
+  }
+  el.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>N° Orden</th><th>Cliente</th><th>Fecha</th><th>Unidades</th></tr></thead><tbody>${[...DB.ordenes].reverse().map(o=>`<tr><td><strong>${o.num||'—'}</strong></td><td>${o.cliente||'—'}</td><td>${o.fecha||'—'}</td><td><span class="badge b-teal">${o.total||0} uds</span></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+function guardarCfg() {
+  const id = document.getElementById('cfgId').value.trim();
+  if (!id) { toast('⚠️ Ingresá el ID del Sheet',true); return; }
+  CFG.sheetId = id;
+  localStorage.setItem('syma_cfg', JSON.stringify(CFG));
+  document.getElementById('cfgMsg').textContent = '✅ Guardado. Conectando...';
+  cargarDatos(true);
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function setStatus(s, msg) {
+  const d = document.getElementById('sbDot');
+  d.className = 'sb-dot'+(s==='ok'?' ok':s==='loading'?' loading':'');
+  document.getElementById('sbTxt').textContent = msg;
+}
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast'+(err?' err':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ═══════════════════════════════════════════════
+// GENERAR QR POR EMPRESA
+// ═══════════════════════════════════════════════
+function poblarSelectorEmpresas() {
+  const sel = document.getElementById('qrEmpresa');
+  if (!sel) return;
+  const empresas = [...new Set(DB.clientes.map(c => c.nombre))].sort();
+  sel.innerHTML = '<option value="">— Seleccioná una empresa —</option>' +
+    empresas.map(e => '<option value="'+esc(e)+'">'+e+'</option>').join('');
+}
+
+function previsualizarQR() {
+  const empresa = document.getElementById('qrEmpresa').value;
+  const preview = document.getElementById('qrPreview');
+  const resumen = document.getElementById('qrResumen');
+  if (!empresa) { preview.style.display='none'; resumen.textContent=''; return; }
+
+  const exts = DB.extintores.filter(e => e.cliente === empresa && e.serie);
+  resumen.textContent = exts.length + ' extintores con N° de serie';
+  if (!exts.length) { preview.style.display='none'; return; }
+
+  preview.style.display = 'block';
+  const cont = document.getElementById('qrLabelsPreview');
+  cont.innerHTML = '';
+
+  exts.slice(0,20).forEach(e => {
+    const div = document.createElement('div');
+    div.className = 'etiqueta-prev';
+    div.innerHTML =
+      '<div style="font-size:7px;font-weight:800;color:var(--teal)">syma</div>' +
+      '<div class="eq-qr" id="prev-'+esc(e.serie)+'"></div>' +
+      '<div class="eq-serie">'+e.serie+'</div>' +
+      '<div class="eq-nombre">'+empresa+'</div>' +
+      '<div class="eq-tipo">'+(e.tipo||'')+(e.capacidad?' · '+e.capacidad:'')+'</div>';
+    cont.appendChild(div);
+    // Generar QR miniatura
+    setTimeout(() => {
+      const qrEl = document.getElementById('prev-'+esc(e.serie));
+      if (qrEl && window.QRCode) {
+        new QRCode(qrEl, { text: e.serie, width:55, height:55, correctLevel: QRCode.CorrectLevel.M });
+      }
+    }, 100);
+  });
+  if (exts.length > 20) {
+    const more = document.createElement('div');
+    more.style.cssText = 'padding:14px;font-size:12px;color:var(--g400);align-self:center';
+    more.textContent = '+ ' + (exts.length-20) + ' más en el PDF';
+    cont.appendChild(more);
+  }
+}
+
+async function generarPDFQR() {
+  const empresa = document.getElementById('qrEmpresa').value;
+  if (!empresa) { toast('Seleccioná una empresa primero', true); return; }
+
+  const exts = DB.extintores.filter(e => e.cliente === empresa && e.serie);
+  if (!exts.length) { toast('Esta empresa no tiene extintores con N° de serie', true); return; }
+
+  toast('⏳ Generando PDF con ' + exts.length + ' etiquetas...');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    // Etiqueta 5x5 cm = 50x50 mm
+    // Hoja A4 = 210x297 mm → 4 columnas x 5 filas = 20 etiquetas por hoja
+    const EW = 48, EH = 48; // tamaño etiqueta mm
+    const COLS = 4, ROWS = 6;
+    const MARGIN_X = (210 - COLS*EW) / 2;
+    const MARGIN_Y = 8;
+    const GAP = 1;
+
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const teal = [61,122,110];
+
+    // Generar QR codes como imágenes usando canvas
+    const qrImages = await Promise.all(exts.map(e => generarQRImagen(e.serie)));
+
+    exts.forEach((e, i) => {
+      if (i > 0 && i % (COLS*ROWS) === 0) doc.addPage();
+      const pos  = i % (COLS*ROWS);
+      const col  = pos % COLS;
+      const row  = Math.floor(pos / COLS);
+      const x    = MARGIN_X + col * (EW + GAP);
+      const y    = MARGIN_Y + row * (EH + GAP);
+
+      // Borde etiqueta
+      doc.setDrawColor(220,225,230);
+      doc.setLineWidth(0.3);
+      doc.rect(x, y, EW, EH);
+
+      // Header verde
+      doc.setFillColor(...teal);
+      doc.rect(x, y, EW, 5, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(7); doc.setFont('helvetica','bold');
+      doc.text('SYMA EXTINTORES', x + EW/2, y+3.5, {align:'center'});
+
+      // QR imagen
+      if (qrImages[i]) {
+        doc.addImage(qrImages[i], 'PNG', x+EW/2-13, y+6, 26, 26);
+      }
+
+      // Serie
+      doc.setTextColor(44,92,82);
+      doc.setFontSize(6.5); doc.setFont('helvetica','bold');
+      doc.text(e.serie, x+EW/2, y+34, {align:'center', maxWidth:EW-4});
+
+      // Empresa
+      doc.setTextColor(17,17,17);
+      doc.setFontSize(6); doc.setFont('helvetica','bold');
+      doc.text(empresa, x+EW/2, y+38.5, {align:'center', maxWidth:EW-4});
+
+      // Tipo y capacidad
+      doc.setTextColor(100,110,120);
+      doc.setFontSize(5.5); doc.setFont('helvetica','normal');
+      const tipoCap = [(e.tipo||''), (e.capacidad||'')].filter(Boolean).join(' · ');
+      doc.text(tipoCap, x+EW/2, y+42.5, {align:'center', maxWidth:EW-4});
+
+      // Línea de corte
+      doc.setDrawColor(200,210,215);
+      doc.setLineDash([1,1]);
+      doc.rect(x-0.5, y-0.5, EW+1, EH+1);
+      doc.setLineDash([]);
+    });
+
+    const nombre = 'Syma_QR_' + empresa.replace(/\s+/g,'_') + '.pdf';
+    doc.save(nombre);
+    toast('✅ PDF descargado — ' + exts.length + ' etiquetas');
+  } catch(err) {
+    console.error(err);
+    toast('❌ Error: ' + err.message, true);
+  }
+}
+
+function generarQRImagen(texto) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200; canvas.height = 200;
+    const div = document.createElement('div');
+    div.style.display = 'none';
+    document.body.appendChild(div);
+    try {
+      const qr = new QRCode(div, {
+        text: texto, width:200, height:200,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      setTimeout(() => {
+        const img = div.querySelector('img') || div.querySelector('canvas');
+        const src = img ? (img.toDataURL ? img.toDataURL('image/png') : img.src) : null;
+        document.body.removeChild(div);
+        resolve(src);
+      }, 150);
+    } catch(e) {
+      document.body.removeChild(div);
+      resolve(null);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('oFecha').value    = new Date().toISOString().split('T')[0];
+  document.getElementById('orderBar').style.display = 'flex';
+  renderExtList();
+
+  // Cargar config guardada
+  const saved = localStorage.getItem('syma_cfg');
+  if (saved) {
+    const c = JSON.parse(saved);
+    if (c.sheetId) CFG.sheetId = c.sheetId;
+  }
+
+  // Cargar datos
+  if (CFG.sheetId) cargarDatos();
+  else setStatus('gray','Sin configurar');
+
+  // Detectar QR en URL
+  const serie = new URLSearchParams(window.location.search).get('serie');
+  if (serie) {
+    setTimeout(()=>{
+      const ext = DB.extintores.find(e=>e.serie===serie);
+      if (ext) toast('Extintor: '+ext.tipo+' '+ext.capacidad+' — '+ext.cliente);
+    }, 2000);
+  }
+});
+</script>
+
+<!-- ───────── QR WORKFLOW MODULE (v3) ───────── -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<style>
+.qr-panel{background:#fff;border:1px solid #dde1e5;border-radius:10px;padding:20px;margin-bottom:20px}
+.qr-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.qr-btn{padding:10px 14px;border-radius:8px;border:none;background:#3d7a6e;color:white;font-weight:600;cursor:pointer}
+.qr-btn.secondary{background:#6b5b8a}
+.qr-btn.warn{background:#d69e2e}
+.qr-result{margin-top:15px;font-family:monospace;background:#f7f8f9;padding:10px;border-radius:8px}
+</style>
+
+<div class="screens" id="qrModule">
+  <div class="qr-panel">
+    <h2>Escaneo de Extintores</h2>
+    <p>Escaneá el QR del extintor para ver datos y registrar acción.</p>
+
+    <div class="qr-actions">
+      <button class="qr-btn" onclick="startQR('inspeccion')">Escanear para inspección</button>
+      <button class="qr-btn secondary" onclick="startQR('retiro')">Escanear para retiro</button>
+    </div>
+
+    <div id="qr-reader" style="width:100%;max-width:420px;margin-top:20px;"></div>
+
+    <div class="qr-result" id="qrResult">
+      Esperando escaneo...
+    </div>
+
+    <div class="qr-actions" id="actionButtons" style="display:none;">
+      <button class="qr-btn" onclick="guardarAccion('OK')">Estado OK</button>
+      <button class="qr-btn warn" onclick="guardarAccion('RETIRO')">Retirar</button>
+      <button class="qr-btn secondary" onclick="guardarAccion('RECARGA')">Enviar a recarga</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let accionActual = null;
+let currentQR = null;
+
+function startQR(tipo){
+  accionActual = tipo;
+  const result = document.getElementById("qrResult");
+  result.innerHTML = "Escaneando QR...";
+  
+  const qr = new Html5Qrcode("qr-reader");
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+        currentQR = decodedText;
+        result.innerHTML = "QR detectado: " + decodedText + "<br>Buscando datos en Sheets...";
+        document.getElementById("actionButtons").style.display = "flex";
+        qr.stop();
+        buscarExtintor(decodedText);
+    }
+  );
+}
+
+function buscarExtintor(id){
+  // Placeholder: conectar a Google Apps Script / Sheets
+  const result = document.getElementById("qrResult");
+
+  result.innerHTML = `
+    ID: ${id}<br>
+    Empresa: (desde Sheets)<br>
+    Tipo: (ABC / CO2)<br>
+    Última inspección: (fecha)<br>
+    Acción seleccionada: ${accionActual}
+  `;
+}
+
+function guardarAccion(estado){
+  const result = document.getElementById("qrResult");
+
+  result.innerHTML += "<br><br>Guardando acción: " + estado + "...";
+
+  // Placeholder para envío a Apps Script
+  const payload = {
+    id: currentQR,
+    accion: accionActual,
+    estado: estado,
+    fecha: new Date().toISOString()
+  };
+
+  console.log("Enviar a Sheets:", payload);
+
+  result.innerHTML += "<br>Registro preparado para enviar a Google Sheets.";
+}
+</script>
+
+
+<!-- ───────── QR MANAGEMENT MODULE (v4) ───────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+.qr-mgmt{background:#fff;border:1px solid #dde1e5;border-radius:10px;padding:20px;margin-top:20px}
+.qr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.qr-input{padding:8px;border:1px solid #ccc;border-radius:6px}
+.qr-preview{margin-top:20px;text-align:center}
+.print-area{margin-top:20px;border-top:1px dashed #ccc;padding-top:20px}
+.label{display:inline-block;border:1px solid #000;padding:10px;margin:10px;text-align:center;width:160px}
+</style>
+
+<div class="qr-mgmt">
+<h2>Gestión de QR</h2>
+<p>Generar QR para extintores que aún no estén en la base.</p>
+
+<div class="qr-grid">
+<input id="empresaQR" class="qr-input" placeholder="Empresa">
+<input id="serieQR"   class="qr-input" placeholder="N° de Serie">
+<input id="tipoQR"    class="qr-input" placeholder="Tipo (Polvo ABC / CO2...)">
+<input id="kgQR"      class="qr-input" placeholder="Capacidad (5 kg / 6 lts...)">
+<input id="vidaUtilQR" class="qr-input" placeholder="Vida útil (ej: 10 años)">
+</div>
+
+<div style="margin-top:10px">
+<button class="qr-btn" onclick="generarNuevoQR()">Generar QR</button>
+<button class="qr-btn secondary" onclick="imprimirQR()">Imprimir etiqueta</button>
+</div>
+
+<div class="qr-preview">
+<div id="nuevoQR"></div>
+<div id="qrId"></div>
+</div>
+
+<div class="print-area" id="printArea"></div>
+
+</div>
+
+<script>
+let ultimoQR = null;
+
+function generarNuevoQR(){
+
+ const serie = document.getElementById("serieQR").value.trim();
+ if (!serie) { alert("Ingresá el N° de serie del extintor"); return; }
+
+ const id = serie;
+ ultimoQR = id;
+
+ document.getElementById("qrId").innerHTML =
+   "<b>Empresa:</b> " + (document.getElementById("empresaQR").value||"—") + "<br>" +
+   "<b>N° Serie:</b> " + id + "<br>" +
+   "<b>Tipo:</b> " + (document.getElementById("tipoQR").value||"—") + " · " + (document.getElementById("kgQR").value||"—") + "<br>" +
+   "<b>Vida útil:</b> " + (document.getElementById("vidaUtilQR").value||"—");
+
+ const qrContainer = document.getElementById("nuevoQR");
+ qrContainer.innerHTML = "";
+
+ new QRCode(qrContainer, {
+   text: id,
+   width: 160,
+   height: 160
+ });
+
+}
+
+function imprimirQR(){
+  if(!ultimoQR){ alert("Primero generá un QR"); return; }
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const empresa   = document.getElementById('empresaQR').value || '';
+    const tipo      = document.getElementById('tipoQR').value || '';
+    const kg        = document.getElementById('kgQR').value || '';
+    const vidaUtil  = document.getElementById('vidaUtilQR').value || '—';
+
+    // Fondo blanco con borde
+    doc.setDrawColor(0); doc.setLineWidth(0.5);
+    doc.rect(10,10,90,80);
+
+    // Header verde
+    doc.setFillColor(61,122,110); doc.rect(10,10,90,12,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('SYMA EXTINTORES', 55, 18, {align:'center'});
+
+    // Empresa
+    doc.setTextColor(17,17,17); doc.setFontSize(9); doc.setFont('helvetica','normal');
+    if(empresa) doc.text(empresa, 55, 27, {align:'center', maxWidth:85});
+
+    // QR — obtener imagen del canvas generado
+    const qrCanvas = document.querySelector('#nuevoQR canvas') || document.querySelector('#nuevoQR img');
+    let qrY = 30;
+    if(qrCanvas) {
+      const qrData = qrCanvas.toDataURL ? qrCanvas.toDataURL('image/png') : qrCanvas.src;
+      doc.addImage(qrData, 'PNG', 30, 30, 40, 40);
+      qrY = 72;
+    }
+
+    // Datos
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text('Serie: '+ultimoQR, 55, qrY, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.text(tipo+(kg?' · '+kg:''), 55, qrY+6, {align:'center'});
+    doc.text('Vida útil: '+vidaUtil, 55, qrY+12, {align:'center'});
+
+    doc.save('Syma_QR_'+ultimoQR+'.pdf');
+    toast('✅ PDF del QR descargado');
+  } catch(err) {
+    console.error(err);
+    toast('❌ Error: '+err.message, true);
+  }
+}
+</script>
+
+</body>
+</html>
