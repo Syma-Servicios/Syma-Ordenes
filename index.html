@@ -783,8 +783,8 @@ function renderClientes() {
       '<td><span class="badge b-teal">' + (c.totalExt||'0') + '</span></td>' +
       '<td style="font-size:12px;color:var(--g600);max-width:160px">' + (c.obs||'—') + '</td>' +
       '<td><div class="td-act">' +
-        '<button class="btn btn-primary btn-sm" onclick="cargarCliEnOrden('' + esc(c.nombre) + '')">📋 Orden</button>' +
-        '<button class="btn btn-secondary btn-sm" onclick="verExtCliente('' + esc(c.nombre) + '')">🧯 Ver</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="cargarCliEnOrden(\"' + esc(c.nombre) + '\")">\uD83D\uDCCB Orden</button>' +
+        '<button class="btn btn-secondary btn-sm" onclick="verExtCliente(\"' + esc(c.nombre) + '\")">\uD83E\uDDF9 Ver</button>' +
       '</div></td>' +
       '</tr>'
     ).join('') +
