@@ -356,12 +356,19 @@ code{background:var(--teal-l);color:var(--teal-d);padding:1px 6px;border-radius:
             <div class="card-hdr"><div class="card-ico">🏢</div><span class="card-ttl">Datos de la empresa</span></div>
             <div class="card-body">
               <div class="fg">
-                <div class="field"><label>N° de Orden</label><input id="oNum" type="text" placeholder="00123"></div>
+                <div class="field"><label>N° de Orden</label><input id="oNum" type="text" placeholder="2026-001" readonly style="background:var(--teal-l);font-weight:700;color:var(--teal-d)"></div>
                 <div class="field"><label>Fecha</label><input id="oFecha" type="date"></div>
+                <div class="field full"><label>Tipo de orden</label>
+                  <select id="oTipo" style="font-size:14px">
+                    <option value="RETIRO">🔄 Retiro de extintores</option>
+                    <option value="INSPECCION">🔍 Inspección</option>
+                    <option value="RETIRO_INSPECCION">🔄🔍 Retiro + Inspección</option>
+                  </select>
+                </div>
                 <div class="field"><label>Razón Social</label><input id="eNombre" type="text" value="Syma"></div>
-                <div class="field"><label>CUIT</label><input id="eCuit" type="text" placeholder="XX-XXXXXXXX-X"></div>
+                <div class="field"><label>CUIT</label><input id="eCuit" type="text" value="30-71054418-9"></div>
                 <div class="field full"><label>Dirección</label><input id="eDireccion" type="text" value="Mariano Acosta 1364, Avellaneda"></div>
-                <div class="field"><label>Teléfono</label><input id="eTel" type="tel"></div>
+                <div class="field"><label>Teléfono</label><input id="eTel" type="tel" value="11-7905-3938"></div>
                 <div class="field"><label>Fecha de retiro</label><input id="oRetiro" type="date"></div>
               </div>
               <div class="field full">
@@ -439,6 +446,11 @@ code{background:var(--teal-l);color:var(--teal-d);padding:1px 6px;border-radius:
             <div class="card-body">
               <div class="preview" id="printArea"></div>
               <div id="shareLinks" style="display:none"></div>
+              <div style="margin-bottom:12px">
+                <button class="btn-share" style="background:var(--teal);width:100%;margin-bottom:8px;border:none;color:white;padding:14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" onclick="guardarOrdenSheet()">
+                  💾 Guardar orden y notificar técnico
+                </button>
+              </div>
               <div class="share-grid">
                 <button class="btn-share btn-wa" onclick="shareWA()">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
@@ -1274,6 +1286,44 @@ function resetOrden() {
   renderExtList();
   goStep(1);
   toast('✓ Nueva orden lista');
+  // Generar número de orden automático
+  generarNroOrden();
+}
+
+async function generarNroOrden() {
+  try {
+    const anio = new Date().getFullYear();
+    // Leer hoja Ordenes del Sheet para obtener el último número
+    const url  = 'https://docs.google.com/spreadsheets/d/' + (CFG.sheetId || SHEET_ID_DEFAULT) + '/gviz/tq?tqx=out:csv&sheet=Ordenes';
+    const resp = await fetch(url);
+    let ultimo = 0;
+    if (resp.ok) {
+      const txt  = await resp.text();
+      const rows = txt.split('\n').slice(1).filter(r => r.trim());
+      rows.forEach(row => {
+        // Columna N_ORDEN es la segunda (índice 1)
+        const cols = row.split(',');
+        const nOrden = (cols[1] || '').replace(/"/g,'').trim();
+        // Formato: 2026-001
+        const match = nOrden.match(/(\d{4})-(\d+)/);
+        if (match && parseInt(match[1]) === anio) {
+          ultimo = Math.max(ultimo, parseInt(match[2]));
+        }
+      });
+    }
+    const siguiente = String(ultimo + 1).padStart(3, '0');
+    const nroNuevo  = anio + '-' + siguiente;
+    const campo = document.getElementById('oNum');
+    if (campo) campo.value = nroNuevo;
+  } catch(e) {
+    // Si falla, generar desde localStorage
+    const anio = new Date().getFullYear();
+    const key  = 'syma_ultimo_orden_' + anio;
+    const ult  = parseInt(localStorage.getItem(key) || '0') + 1;
+    localStorage.setItem(key, ult);
+    const campo = document.getElementById('oNum');
+    if (campo) campo.value = anio + '-' + String(ult).padStart(3, '0');
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1474,6 +1524,70 @@ function generarQRImagen(texto) {
       resolve(null);
     }
   });
+}
+
+// ═══════════════════════════════════════════════
+// GUARDAR ORDEN Y NOTIFICAR TÉCNICO
+// ═══════════════════════════════════════════════
+async function guardarOrdenSheet() {
+  const nOrden  = document.getElementById('oNum')?.value || '';
+  const fecha   = document.getElementById('oFecha')?.value || '';
+  const tipo    = document.getElementById('oTipo')?.value || 'RETIRO';
+  const cliente = document.getElementById('cNombre')?.value || '';
+  const dir     = document.getElementById('cDir')?.value || '';
+  const tel     = document.getElementById('cTel')?.value || '';
+  const tecnico = document.querySelector('.tec-btn.sel')?.dataset.tec || '';
+
+  if (!cliente) { toast('Completá los datos del cliente primero', true); return; }
+  if (!tecnico) { toast('Seleccioná un técnico', true); return; }
+
+  const datos = {
+    accion:   'guardarOrden',
+    nombre:   'Syma_Orden_' + nOrden + '_' + cliente.replace(/\s+/g,'_') + '.pdf',
+    pdf:      '', // sin PDF por ahora
+    cliente:  cliente,
+    nOrden:   nOrden,
+    fecha:    fecha,
+    tipo:     tipo,
+    tecnico:  tecnico,
+    direccion: dir,
+    tel:      tel,
+    estado:   'PENDIENTE',
+  };
+
+  try {
+    toast('💾 Guardando orden...');
+    const webAppUrl = CFG.webAppUrl || '';
+    if (webAppUrl) {
+      const resp = await fetch(webAppUrl, { method:'POST', body: JSON.stringify(datos) });
+      const data = await resp.json();
+      if (data.ok) {
+        toast('✅ Orden guardada');
+        // Notificar técnico por WhatsApp
+        const tipoTxt = tipo === 'RETIRO' ? 'Retiro' : tipo === 'INSPECCION' ? 'Inspección' : 'Retiro + Inspección';
+        const msg = 'Orden N° ' + nOrden + ' — ' + tipoTxt + '\n'
+          + 'Cliente: ' + cliente + '\n'
+          + 'Dirección: ' + dir + '\n'
+          + 'Fecha: ' + fecha + '\n'
+          + 'Abrí la app de inspecciones para completarla.';
+        // Buscar número del técnico
+        const telTec = tecnico === 'Sergio Gaston Ponce' ? '' : '';
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      }
+    } else {
+      // Sin Web App — guardar en localStorage
+      const ordenes = JSON.parse(localStorage.getItem('syma_ordenes') || '[]');
+      ordenes.unshift({ ...datos, id: Date.now() });
+      localStorage.setItem('syma_ordenes', JSON.stringify(ordenes.slice(0,100)));
+      toast('✅ Orden guardada localmente');
+      // Notificar igual
+      const tipoTxt = tipo === 'RETIRO' ? 'Retiro' : tipo === 'INSPECCION' ? 'Inspección' : 'Retiro + Inspección';
+      const msg = 'Orden N° ' + nOrden + ' — ' + tipoTxt + '\nCliente: ' + cliente + '\nDirección: ' + dir + '\nFecha: ' + fecha;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
 }
 
 // ═══════════════════════════════════════════════
