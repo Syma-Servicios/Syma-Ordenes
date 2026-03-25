@@ -556,6 +556,10 @@ code{background:var(--teal-l);color:var(--teal-d);padding:1px 6px;border-radius:
               <label>ID del Google Sheet</label>
               <input id="cfgId" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
             </div>
+            <div class="field" style="margin-bottom:14px">
+              <label>URL del Web App (Apps Script)</label>
+              <input id="cfgWebApp" type="text" placeholder="https://script.google.com/macros/s/...">
+            </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-primary" onclick="guardarCfg()">💾 Guardar y conectar</button>
               <button class="btn btn-secondary" onclick="cargarDatos(true)">🔄 Probar</button>
@@ -608,7 +612,8 @@ code{background:var(--teal-l);color:var(--teal-d);padding:1px 6px;border-radius:
 // CONFIG
 // ═══════════════════════════════════════════════
 const SHEET_ID_DEFAULT = '1ieV0V8ZnbN2xzC-Vfh0mBw5Ku6wM9mLvWFjDLZg6uDU';
-let CFG = { sheetId: SHEET_ID_DEFAULT };
+const WEB_APP_DEFAULT = 'https://script.google.com/macros/s/AKfycby0dAU-N9_l5P-unMCj4SOTIfZe8g-6rub5KlnWvHMjECneNp9jDxqCUuNPfMIVkCANvA/exec';
+let CFG = { sheetId: SHEET_ID_DEFAULT, webAppUrl: WEB_APP_DEFAULT };
 
 const TIPOS = ['Polvo ABC','CO₂','Agua B/P','Halón','Polvo BC','AFFF Espuma','HCFC','AK','Otro'];
 const CAPS  = ['1 kg','2.5 kg','3.5 kg','5 kg','6 lts','10 kg','10 lt','25 kg','50 kg','70 kg','100 kg','Otro'];
@@ -654,6 +659,7 @@ function navTo(btn) {
   if (sc === 'setup') {
     const campo = document.getElementById('cfgId');
     if (campo) campo.value = CFG.sheetId || '';
+  const waEl2 = document.getElementById('cfgWebApp'); if(waEl2) waEl2.value = CFG.webAppUrl || '';
   }
   if (window.innerWidth <= 768) cerrarMob();
 }
@@ -1343,9 +1349,11 @@ function renderOrdenes() {
 // CONFIG
 // ═══════════════════════════════════════════════
 function guardarCfg() {
-  const id = document.getElementById('cfgId').value.trim();
+  const id  = document.getElementById('cfgId').value.trim();
+  const url = document.getElementById('cfgWebApp')?.value.trim();
   if (!id) { toast('⚠️ Ingresá el ID del Sheet',true); return; }
   CFG.sheetId = id;
+  if (url) CFG.webAppUrl = url;
   localStorage.setItem('syma_cfg', JSON.stringify(CFG));
   document.getElementById('cfgMsg').textContent = '✅ Guardado. Conectando...';
   cargarDatos(true);
@@ -1602,7 +1610,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const saved = localStorage.getItem('syma_cfg');
   if (saved) {
     const c = JSON.parse(saved);
-    if (c.sheetId) CFG.sheetId = c.sheetId;
+    if (c.sheetId)   CFG.sheetId   = c.sheetId;
+    if (c.webAppUrl) CFG.webAppUrl = c.webAppUrl;
   }
 
   // Cargar datos
