@@ -1323,12 +1323,12 @@ async function generarNroOrden() {
     if (campo) campo.value = nroNuevo;
   } catch(e) {
     // Si falla, generar desde localStorage
-    const anio = new Date().getFullYear();
-    const key  = 'syma_ultimo_orden_' + anio;
-    const ult  = parseInt(localStorage.getItem(key) || '0') + 1;
-    localStorage.setItem(key, ult);
-    const campo = document.getElementById('oNum');
-    if (campo) campo.value = anio + '-' + String(ult).padStart(3, '0');
+    const anio2 = new Date().getFullYear();
+    const key2  = 'syma_ultimo_orden_' + anio2;
+    const ult2  = parseInt(localStorage.getItem(key2) || '0') + 1;
+    localStorage.setItem(key2, String(ult2));
+    const campo2 = document.getElementById('oNum');
+    if (campo2) campo2.value = anio2 + '-' + String(ult2).padStart(3, '0');
   }
 }
 
@@ -1544,7 +1544,7 @@ async function guardarOrdenSheet() {
   const cliente = document.getElementById('cNombre')?.value || '';
   const dir     = document.getElementById('cDir')?.value || '';
   const tel     = document.getElementById('cTel')?.value || '';
-  const tecnico = document.querySelector('.tec-btn.sel')?.dataset.tec || '';
+  const tecnico = window.tecnico || '';
 
   if (!cliente) { toast('Completá los datos del cliente primero', true); return; }
   if (!tecnico) { toast('Seleccioná un técnico', true); return; }
@@ -1571,6 +1571,11 @@ async function guardarOrdenSheet() {
       const data = await resp.json();
       if (data.ok) {
         toast('✅ Orden guardada');
+        // Incrementar contador local
+        const anioOrd = new Date().getFullYear();
+        const keyOrd  = 'syma_ultimo_orden_' + anioOrd;
+        const nroActual = parseInt((document.getElementById('oNum')?.value||'0').split('-')[1]||'0');
+        localStorage.setItem(keyOrd, String(nroActual));
         // Notificar técnico por WhatsApp
         const tipoTxt = tipo === 'RETIRO' ? 'Retiro' : tipo === 'INSPECCION' ? 'Inspección' : 'Retiro + Inspección';
         const msg = 'Orden N° ' + nOrden + ' — ' + tipoTxt + '\n'
@@ -1579,8 +1584,8 @@ async function guardarOrdenSheet() {
           + 'Fecha: ' + fecha + '\n'
           + 'Abrí la app de inspecciones para completarla.';
         // Buscar número del técnico
-        const telTec = tecnico === 'Sergio Gaston Ponce' ? '' : '';
-        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+        const telTec = tecnico === 'Sergio Gaston Ponce' ? '5491179053938' : '5491179053938'; // Mismo número por ahora
+        window.open('https://wa.me/' + telTec + '?text=' + encodeURIComponent(msg), '_blank');
       }
     } else {
       // Sin Web App — guardar en localStorage
